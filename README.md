@@ -21,6 +21,8 @@ Enjoy learning and, most importantly, stay safe!
 
 ### 1. **Find The Vulnerable Templates:**
 ```
+$templates = certutil -v -template | Out-String
+
 $templateBlocks = $templates -split "Template\["
 
 foreach ($block in $templateBlocks) {
