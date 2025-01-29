@@ -1,3 +1,5 @@
+$templates = certutil -v -template | Out-String
+
 $templateBlocks = $templates -split "Template\["
 
 foreach ($block in $templateBlocks) {
